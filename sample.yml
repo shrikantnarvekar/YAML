@@ -1,0 +1,6 @@
+- hosts: all
+  tasks:
+    - name: saoifniasn
+      file:
+        src:
+        dest:

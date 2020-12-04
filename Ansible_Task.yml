@@ -1,0 +1,321 @@
+#Task1: Create folder in /home/Ubuntu (your user) 
+---
+- hosts: all
+  tasks:
+   - name: create a folder
+     file: 
+      path: /home/ubuntu/test
+      state: directory
+
+#Task2:Create empty file (testfile) in /tmp/ folder
+
+   - name: Creating a file 
+     file: 
+      path: /home/ubuntu/task2_test_file.txt
+      state: touch
+
+#Task3:Append lines in task2_test_file
+
+   - name: line insert
+     lineinfile: 
+      path: /home/ubuntu/task2_test_file.txt
+      line: 'Append 1 :)'
+      insertbefore: BOF
+
+#Task4:Copy testfile to the new folder created in Task1
+   - name: Copy text file to test folder
+     copy:
+       src: /home/ubuntu/task2_test_file.txt
+       dest: /home/ubuntu/test/task2_test_file.txt
+       owner: ubuntu
+       group: ubuntu
+       mode: "0777"
+       remote_src: yes
+
+#Task5 grant permission 644 to test file
+   - name: Change file permissions
+     file:
+      path: /home/ubuntu/task2_test_file.txt
+      mode: '0644'
+
+ #using variable, jinja2 template, conditionals, loop, become, when, ignore errors, wait
+
+#Task6:- Rename motd file to motd_old and update motd file's text (yourname, date, personal msg)based on distributuion type
+- hosts: all
+  tasks:
+    - name: new file
+      file:
+         path: /etc/motd_old
+         state: touch
+         mode: '077'
+    - name: copy motd file to motd_old
+      copy:
+         src: /etc/motd
+         dest: /etc/motd_old
+         mode: '0777'
+         remote_src: yes
+    - name: updating motd_old file content
+      lineinfile:
+         path: /etc/motd
+         line: 'Shrikant {{ansible_date_time.date}} Konichiwa Minasa '
+
+#Task7:- create 5 text  files then create one tar file.
+---
+- hosts: all
+  tasks:
+   - name: Creating 5 text files
+     file: 
+      path: /home/ubuntu/test/{{ item }}
+      state: touch
+     with_items: 
+      - file1.txt
+      - file2.txt
+      - file3.txt
+      - file4.txt
+   - name: Creating tar file
+     archive:
+      path: 
+       - /home/ubuntu/test/file1.txt
+       - /home/ubuntu/test/file2.txt
+       - /home/ubuntu/test/file3.txt
+       - /home/ubuntu/test/file4.txt
+       - /home/ubuntu/test/file5.txt
+      dest: /home/ubuntu/test/task7.tar
+      format: tar
+
+#Task8:- retrive hostname and ip address and copy it in any folder other than temp.
+---
+- hosts: all
+  vars:
+   var_hostname: "{{ ansible_hostname}}"
+   var_ipaddress: "{{ ansible_facts.eth0.ipv4.address }}"
+  tasks:
+   - name: creating a text file
+     file:
+      path: /home/ubuntu/hostname_file.txt
+      state: touch
+   - name: Saving content in the file
+     lineinfile:
+      dest: /home/ubuntu/hostname_file.txt
+      line: "Hostname= {{var_hostname}} and the IPAdress is {{var_ipaddress}}"
+    
+
+
+#Task9:- install package using package manager using variable and environment variable
+             #ansible-playbook task9.yml -e "pkg=nginx" -b
+---
+- hosts: all
+  vars: 
+   var_pkg: "{{pkg}}"
+  tasks:
+   - name: Install a list of packages
+     yum:
+      name: "{{var_pkg}}"
+      state: present
+ 
+
+#Task10:- install any web server and display personalise msg on index.html
+           #Installing apache in managed node
+        #ansible-playbook apache.yml -b (-b is for root user) and then paste the public ip address in the browser 
+---
+- hosts: all
+  tasks:
+   - name: Install apache httpd
+     apt:
+      name: apache2
+      state: present
+   - name: Replace intex.html file
+     copy:
+      src: /etc/ansible/modules/index.html
+      dest: /var/www/html/
+      mode: 0644 
+   - name: Restart Apache 
+     service:
+      name: apache2
+      state: restart
+
+#New index.html file
+<!DOCTYPE html>
+html>
+<head>
+<title>Ansible Sample</title>
+<body>
+<h1>Apache is started in host system</h1>
+<h2>Konichiwa</h2>
+</body>
+</html>
+
+[win]
+172.31.41.246
+
+[win:vars]
+ansible_user=Administrator
+ansible_port=5986
+ansible_connection=winrm
+ansible_password=Shrik@nt33
+ansible_winrm_server_cert_validation=ignore
+ansible_user=Administrator ansible_port=5986 ansible_connection=winrm ansible_password=Shrik@nt33 ansible_winrm_server_cert_validation=ignore
+
+[ubuntu]
+172.31.42.102 ansible_user=ubuntu ansible_port=22 ansible_connection=ssh ansible_ssh_pass=123456789
+
+[win]
+172.31.41.178 ansible_user=administrator ansible_port=5986 ansible_connection=winrm ansible_password=Shrik@nt33 ansible_winrm_server_cert_validation=ignore
+
+# Task 11 create archive file in local host and extract zip in windows host.
+---
+- hosts: win
+  tasks:
+   - name: Creating Zip File in Windows Node
+     win_copy:
+      src: /home/ubuntu/test_zip.zip
+      dest: C:\Users\Administrator\Desktop\windows_test\test_zip.zip
+     notify: 
+      - folder_creation
+      - unzipping_file
+
+  handlers:
+    - name: folder_creation
+      win_file:
+       path: C:\Users\Administrator\Desktop\windows_test\unzip1
+       state: directory
+    - name: unzipping_file
+      win_unzip:
+       src: C:\Users\Administrator\Desktop\windows_test\test_zip.zip
+       dest: C:\Users\Administrator\Desktop\windows_test\unzip1
+
+# Task12- create user 10  in windows active directory (use variable file for users  and loop)
+---
+- hosts: win
+  tasks:
+   - name: Creation of 10 Users in OP OU
+     win_domain_user:
+      firstname: "{{ item.firstname }}"
+      surname: "{{ item.surname }}"
+      name: "{{ item.name }}"
+      password: "{{ item.password}}"
+      state: present
+      path: "OU=OP,DC=LTI_10668414,DC=com"
+     with_items:
+       - name: 'sample_user'
+         firstname: 'Bruh'
+         surname: 'Hello'
+         password: 'Password@123'
+       - name: 'Naruto'
+         firstname: 'Naruto'
+         surname: 'Uzumaki'
+         password: 'Password@123'
+       - name: 'Itachi'
+         firstname: 'Itachi'
+         surname: 'Uchiha'
+         password: 'Password@123'
+       - name: 'Kakashi'
+         firstname: 'Kakashi'
+         surname: 'Hatake'
+         password: 'Password@123'
+       - name: 'Izuku'
+         firstname: 'Izuku'
+         surname: 'Midoriya'
+         password: 'Password@123'
+
+# Task 13 create 2 security groups in windows AD if group created successfully create a network shared folder then grant access to the shared folder (notify,handler)
+---
+- hosts: win
+  tasks:
+   - name: Creation of 1st Security group
+     win_domain_group:
+      name: security_group1
+      protect: no
+      category: security
+      scope: domainlocal
+      state: present
+     notify: Sharing_Access_to_SG1
+
+   - name: Creation of 2nd Security group
+     win_domain_group:
+      name: security_group2
+      protect: no
+      category: security
+      scope: universal
+      state: present
+     notify: Sharing_Access_to_SG2
+
+  handlers: 
+    - name: Sharing_Access_to_SG1
+      win_share:
+       name: Share_folder
+       path: C:\Users\Administrator\Desktop\share_folder1
+       #read: security_group1
+       full: security_group1
+       state: present
+    - name: Sharing_Access_to_SG2
+      win_share: 
+       name: Share_folder
+       path: C:\Users\Administrator\Desktop\share_folder2
+       #read: security_group2
+       full: security_group2
+       state: present
+
+#  Task 14  add 5-5 user's based on condition (condition active directory atrribute location = onshore/offshore)
+---
+- hosts: win
+  tasks:
+   - name: Running Powershell Script in Windows host
+     win_shell: |
+       $all_user=Get-ADUser -Filter * -SearchBase "DC=LTI_10668414,DC=COM"
+       foreach($user in $all_user){
+       $user_deparment=Get-ADUser -Identity $user -Properties Department | Select-Object Department
+            if($user_deparment.Department -eq $null){}
+            elseif($user_deparment.Department -eq "marketing"){
+                Add-ADGroupMember -Identity Sales_group -Members $user.name}
+            elseif($user_deparment.Department -eq "it"){
+                Add-ADGroupMember -Identity Marketing_group -Members $user.name}
+            elseif($user_deparment.Department -eq "sales"){
+                Add-ADGroupMember -Identity IT_group -Members $user.name}}
+
+
+
+# Task 15 create 10 blank file with loop and variable use vault to variable & task file
+#1st apt-get install tree 
+#2nd ansible-galaxy task15
+
+# tasks directory -main.yml file
+   - name: Creating a file 
+     win_file: 
+      path: C:\Users\Administrator\Desktop\windows_test\{{ item }}
+      state: touch
+     with_items:
+      - "{{ items1}}"
+# vars directory -main.yml file
+items1: 
+ - file1.txt
+ - file2.txt
+ - file3.txt
+ - file4.txt
+ - file5.txt
+ - file6.txt
+ - file7.txt
+ - file8.txt
+ - file9.txt
+ - file10.txt
+
+# In Playbook file (ansible-vault encrypt main.yml for both tasks and variables --Not working )
+#ansible-playbook task15_role.yml --ask-vault-pass
+---
+- hosts: win
+  roles:
+   - role: task15
+
+############################################
+---
+- hosts: win
+  vars_files:
+   - file_var.yml
+  tasks:
+   - name: create 100 files
+     win_file:
+      path: C:\Users\Administrator\Desktop\windows_test\{{ file_name }}
+      state: touch
+  
+file_name: ["file1.txt","file2.txt","file3.txt"]
+############################################

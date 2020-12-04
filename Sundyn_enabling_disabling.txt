@@ -1,0 +1,30 @@
+---
+- hosts: win
+  vars_prompt:
+    - name: username
+      prompt: "Enter your username (SAMAccountName):-"
+      private: no
+    - name: option
+      prompt: "Do you want to enable or disable your account? (Type enable/disable):-"
+      private: no
+  tasks:
+   - name: Running Powershell Script in Windows host
+     win_shell: | 
+      $username= "{{ username }}" 
+      $option= "{{ option }}"
+      function disable_user{
+      param([String]$sam_user)
+      $ErrorActionPreference = 'SilentlyContinue'
+      Disable-ADAccount -Identity $sam_user
+      $security_group_name= Get-AdPrincipalGroupMembership -Identity $sam_user | select-object name
+      $security_group_array = @($security_group_name)
+      ForEach($items in $security_group_array){
+      Remove-ADPrincipalGroupMembership -Identity $sam_user -MemberOf $items.name -Confirm:$false
+      }}
+
+      if($option -eq "disable"){
+       disable_user $username
+      }
+      elseif($option -eq "enable"){
+        Enable-ADAccount -Identity $username 
+      }

@@ -1,0 +1,26 @@
+Person:
+  name: &name1 "Shrikant Narvekar"  # & is used for variable
+  age: 23
+  Height: 182.1  # we can use !!float (Shorthand)
+  male: true
+  birthday: 1998-01-12 #ISO 86001 format
+  something_else: null
+  hobbies:             # Example of list
+    - video games
+    - Animes
+    - BRUH
+  ProjectTeammates:
+    - name: "Ankit" #List  
+      age: 9999
+      gender: "male"
+    - {name: "Jeba", age: 9999} # Same as list but much easier
+    - {name: "Yatish", age: 9999}
+    - {name: "Aakansha", age: 9999}
+    - {name: "Indraja", age: 9999}
+  fav_animes: ["Boku no hero academia","Black Clover","Naruto","God of highschool"] #Also List
+  Description: >
+    this description is used for 
+    to render a multiple line sentences 
+    into single line I.e It will consider 
+    as a sing value.
+  emp_id: *name1   #i.e "Shrikant narvekar"

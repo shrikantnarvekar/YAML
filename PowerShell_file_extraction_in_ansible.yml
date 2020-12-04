@@ -1,0 +1,89 @@
+---
+- hosts: win
+  vars:
+   zip_folder: "{{ path }}"
+   destination_folder: "{{ dest }}"
+  tasks:
+   - debug:
+      msg: "{{ zip_folder }}" 
+   - debug:
+      msg: "{{ destination_folder }}"
+   - name: Running Powershell Script in Windows host
+     win_shell: | 
+      $ErrorActionPreference = 'SilentlyContinue'
+      $zip_folder= "{{ zip_folder }}" 
+      $new_folder= $zip_folder + "\unzipped_files" 
+      New-Item -Path $new_folder -ItemType Directory 
+      $destination_folder= "{{ destination_folder }}" 
+
+      $all_zip_file= Get-ChildItem $zip_folder -Filter *.zip
+
+      foreach($zip in $all_zip_file){
+        Get-ChildItem $zip_folder -Filter *.zip | Expand-Archive -DestinationPath "$new_folder\$zip" -Force
+      }
+      Copy-Item -Path "$new_folder\*" -Destination $destination_folder -Recurse 
+
+     notify: scheduler
+
+  handlers: 
+    - name: scheduler
+      win_scheduled_task:
+       name: schedule_unzipping_files
+       actions:
+        - path: C:\Script\schedule_script.ps1
+       triggers:
+        - type: daily
+          start_boundary: '2020-09-15T12:00:00'
+       state: present
+       run_level: highest
+
+
+#ansible-playbook powershell_extract.yml -e "path=C:\testv1 dest=C:\test_v2" -vvv
+#ansible-playbook powershell_extract.yml --extra-vars "path='C:\Users\Administrator\Desktop\testv1' dest='C:\Users\Administrator\Desktop\testv2'" -vvv
+#ansible-playbook powershell_extract.yml -e "path=C:\testv1 dest=C:\testv2" -vvv
+C:\Users\Administrator\Desktop\testv1
+C:\Users\Administrator\Desktop\testv2
+C:\testv1
+
+
+---
+- hosts: win
+  tasks:
+   - name: Running Powershell Script in Windows host
+     win_shell: |
+      $zip_folder= "C:\Users\Administrator\Desktop\testv1" ;
+      $new_folder= $zip_folder + "\unzipped_files" ;
+      New-Item -Path $new_folder -ItemType Directory ;
+      $destination_folder= "C:\Users\Administrator\Desktop\testv2" ;
+      $all_zip_file= Get-ChildItem $zip_folder -Filter *.zip  ;
+
+      foreach($zip in $all_zip_file){
+      Get-ChildItem $zip_folder -Filter *.zip | Expand-Archive -DestinationPath "$new_folder\$zip" -Force ;
+      }
+      Copy-Item -Path "$new_folder\*" -Destination $destination_folder -Recurse ;
+
+
+
+
+
+
+
+---
+- hosts: win
+  vars:
+   zip_folder: 'C:\Users\Administrator\Desktop\testv1'
+   destination_folder: 'C:\Users\Administrator\Desktop\testv2'
+  tasks:
+   - name: Running Powershell Script in Windows host
+     win_shell: |
+      $zip_folder= "{{zip_folder}}" ;
+      $new_folder= $zip_folder + "\unzipped_files" ;
+      New-Item -Path $new_folder -ItemType Directory ;
+      $destination_folder= "{{destination_folder}}" ;
+
+      $all_zip_file= Get-ChildItem $zip_folder -Filter *.zip  ;
+
+      foreach($zip in $all_zip_file){
+        Get-ChildItem $zip_folder -Filter *.zip | Expand-Archive -DestinationPath "$new_folder\$zip" -Force ;
+      }
+      Copy-Item -Path "$new_folder\*" -Destination $destination_folder -Recurse ;
